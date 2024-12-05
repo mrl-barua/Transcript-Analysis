@@ -33,9 +33,12 @@ jobs:
       - name: Get Current Tag and Create New Version
         id: create_tag
         run: |
+          # Fetch all tags to make sure we are up-to-date with remote tags
+          git fetch --tags
+          
           # Get the current tag or default to v0.0.0
           current_version=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-
+          
           # Extract major, minor, and patch numbers
           major=$(echo $current_version | cut -d. -f1 | tr -d v)
           minor=$(echo $current_version | cut -d. -f2)
@@ -43,13 +46,13 @@ jobs:
 
           # Increment the minor version
           new_version="v${major}.$((minor + 1))"
-
+          
           # Check if the tag already exists in the remote repository
           if git rev-parse "$new_version" >/dev/null 2>&1; then
             echo "Tag $new_version already exists. Incrementing patch version."
             new_version="v${major}.${minor}.$((patch + 1))"
           fi
-
+          
           # Create and push the new tag
           echo "New Version: $new_version"
           git config user.name "github-actions[bot]"
@@ -76,6 +79,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: dist/transcript_analysis
+          asset_path: dist/transcript_analysis  
           asset_name: transcript_analysis
           asset_content_type: application/octet-stream
