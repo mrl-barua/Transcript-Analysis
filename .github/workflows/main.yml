@@ -34,35 +34,35 @@ jobs:
         id: create_tag
         run: |
           # Fetch all tags to make sure we are up-to-date with remote tags
-            git fetch --tags
+          git fetch --tags
 
-            # Get the current tag or default to v0.0.0
-            current_version=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          # Get the current tag or default to v0.0.0
+          current_version=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
 
-            # Extract major, minor, and patch numbers
-            major=$(echo $current_version | cut -d. -f1 | tr -d v)
-            minor=$(echo $current_version | cut -d. -f2)
-            patch=$(echo $current_version | cut -d. -f3)
+          # Extract major, minor, and patch numbers
+          major=$(echo $current_version | cut -d. -f1 | tr -d v)
+          minor=$(echo $current_version | cut -d. -f2)
+          patch=$(echo $current_version | cut -d. -f3)
 
-            # Increment the minor version first
-            new_version="v${major}.$((minor + 1))"
+          # Increment the minor version first
+          new_version="v${major}.$((minor + 1))"
 
-            # Check if the tag already exists in the remote repository
-            if git rev-parse "$new_version" >/dev/null 2>&1; then
-              # If tag exists, increment the patch version
-              echo "Tag $new_version already exists. Incrementing patch version."
-              new_version="v${major}.${minor}.$((patch + 1))"
-            fi
+          # Check if the tag already exists in the remote repository
+          if git rev-parse "$new_version" >/dev/null 2>&1; then
+            # If tag exists, increment the patch version
+            echo "Tag $new_version already exists. Incrementing patch version."
+            new_version="v${major}.${minor}.$((patch + 1))"
+          fi
 
-            # Create and push the new tag
-            echo "New Version: $new_version"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag $new_version
-            git push origin $new_version
+          # Create and push the new tag
+          echo "New Version: $new_version"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $new_version
+          git push origin $new_version
 
-            # Output the new version
-            echo "new_version=$new_version" >> $GITHUB_ENV
+          # Output the new version
+          echo "new_version=$new_version" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         id: create_release
