@@ -84,8 +84,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/transcript_analysis.exe
-          asset_name: transcript_analysis.exe
+          asset_path: dist/transcript_analysis
+          asset_name: transcript_analysis
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
