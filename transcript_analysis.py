@@ -1,174 +1,115 @@
-from collections import Counter
 from spellchecker import SpellChecker
 import re
 import csv
 
 spell = SpellChecker()
 
-def process_text(input_text):
-    """Process text from a file."""
+def process_text_line_by_line(filename):
+    """Process text from a file line by line."""
     text_data = {}
-    
-    lines = input_text.strip().split("\n")
     previous_timestamp = None
     text = ""
-    
-    for line in lines:
-        if '-->' in line:
-            if previous_timestamp is not None and text.strip():
+
+    try:
+        with open(filename, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if '-->' in line:  # Timestamp line
+                    if previous_timestamp and text.strip():
+                        text_data[previous_timestamp] = text.strip()
+                    previous_timestamp = line
+                    text = ""
+                else:  
+                    text += " " + line
+
+            if previous_timestamp and text.strip():
                 text_data[previous_timestamp] = text.strip()
-            previous_timestamp = line.strip()
-            text = ""
-        else:
-            text += " " + line.strip()
-    
-    if previous_timestamp is not None and text.strip():
-        text_data[previous_timestamp] = text.strip()
+    except Exception as e:
+        raise IOError(f"Error processing file: {e}")
     
     return text_data
 
-def detect_inaccurate_words(transcribed_words):
-    """Detect inaccurate words using spelling check and common error patterns."""
+def detect_inaccurate_words(transcribed_words, word_cache):
+    """Detect inaccurate words using spelling check with caching."""
     inaccurate_words = []
-    
+
     for word in transcribed_words:
         word_cleaned = re.sub(r'[^\w\s]', '', word)
-        
-        if word_cleaned and not spell.correction(word_cleaned) == word_cleaned:
-            inaccurate_words.append(word)
+        if word_cleaned:
+            if word_cleaned in word_cache:
+                is_accurate = word_cache[word_cleaned]
+            else:
+                is_accurate = spell.correction(word_cleaned) == word_cleaned
+                word_cache[word_cleaned] = is_accurate
+
+            if not is_accurate:
+                inaccurate_words.append(word)
     
     return inaccurate_words
 
-def analyze_transcripts(input_text):
-    """Analyze transcripts and detect inaccuracies."""
-    results = []
+def analyze_transcripts(filename, csv_filename="analysis_results.csv"):
+    """Analyze transcripts and write results to a CSV."""
     total_accurate = total_inaccurate = total_words = 0
-    
+    word_cache = {} 
+
     try:
-        text_data = process_text(input_text)
-    except Exception as e:
-        return {"line_analysis": [], "file_metrics": {"error": f"Error processing input text: {e}"}}
-        
-    for timestamp, transcript in text_data.items():
-        try:
-            transcribed_words = transcript.split()
-            
-            if not transcribed_words:
-                continue
-
-            inaccurate_words = detect_inaccurate_words(transcribed_words)
-            
-            accurate_words = len(transcribed_words) - len(inaccurate_words)
-            inaccurate_word_count = len(inaccurate_words)
-            total_accurate += accurate_words
-            total_inaccurate += inaccurate_word_count
-            total_words += len(transcribed_words)
-            
-            accuracy_score = (accurate_words / len(transcribed_words)) if transcribed_words else 0
-            accuracy_percentage = (accuracy_score * 100) if total_words else 0
-            
-            results.append({
-                "timestamp": timestamp,
-                "transcript": transcript,
-                "accurate_words": accurate_words,
-                "inaccurate_words": inaccurate_word_count,
-                "accuracy_score": round(accuracy_score, 2),
-                "accuracy_percentage": round(accuracy_percentage, 2)
-            })
-            
-        except Exception as e:
-            continue
-    
-    if not total_words:
-        return {"line_analysis": [], "file_metrics": {"error": "No valid words processed"}}
-        
-    overall_score = (total_accurate / total_words) if total_words else 0
-    overall_percentage = (overall_score * 100) if total_words else 0
-    
-    return {
-        "line_analysis": results,
-        "file_metrics": {
-            "total_words": total_words,
-            "total_accurate": total_accurate,
-            "total_inaccurate": total_inaccurate,
-            "overall_score": round(overall_score, 2),
-            "overall_percentage": round(overall_percentage, 2)
-        }
-    }
-
-def print_analysis(analysis):
-    """Print analysis results in a structured format."""
-    if 'error' in analysis['file_metrics']:
-        print(f"\033[91mError: {analysis['file_metrics']['error']}\033[0m") 
+        text_data = process_text_line_by_line(filename)
+    except IOError as e:
+        print(f"\033[91mError: {e}\033[0m")
         return
-    
-    print("\n\033[1mAnalysis Summary\033[0m:")
-    print(f"Total Words: {analysis['file_metrics']['total_words']}")
-    print(f"Accurate Words: {analysis['file_metrics']['total_accurate']}")
-    print(f"Inaccurate Words: {analysis['file_metrics']['total_inaccurate']}")
-    print(f"Overall Accuracy Score: {analysis['file_metrics']['overall_score']} (Percentage: {analysis['file_metrics']['overall_percentage']}%)")
-    
-    print("\n\033[1mDetailed Line Analysis\033[0m:")
-    for line in analysis["line_analysis"]:
-        print(f"\nTimestamp: \033[94m{line['timestamp']}\033[0m")
-        print(f"Transcript: {line['transcript']}")
-        print(f"Accurate Words: {line['accurate_words']}")
-        print(f"Inaccurate Words: {line['inaccurate_words']}")
-        print(f"Accuracy Score: {line['accuracy_score']} (Percentage: {line['accuracy_percentage']}%)")
-    
-def save_analysis_to_csv(analysis, filename="analysis_results.csv"):
-    """Save the analysis to a file in CSV format."""
+
     try:
-        with open(filename, 'w', newline='') as csvfile:
+        with open(csv_filename, 'w', newline='') as csvfile:
             fieldnames = [
-                'Timestamp', 'Transcript', 'Accurate Words', 'Inaccurate Words', 
+                'Timestamp', 'Transcript', 'Accurate Words', 'Inaccurate Words',
                 'Accuracy Score', 'Accuracy Percentage'
             ]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            
             writer.writeheader()
-            for line in analysis["line_analysis"]:
+
+            for timestamp, transcript in text_data.items():
+                transcribed_words = transcript.split()
+                if not transcribed_words:
+                    continue
+
+                inaccurate_words = detect_inaccurate_words(transcribed_words, word_cache)
+                accurate_words = len(transcribed_words) - len(inaccurate_words)
+
+                total_accurate += accurate_words
+                total_inaccurate += len(inaccurate_words)
+                total_words += len(transcribed_words)
+
+                accuracy_score = (accurate_words / len(transcribed_words)) if transcribed_words else 0
+                accuracy_percentage = accuracy_score * 100
+
                 writer.writerow({
-                    'Timestamp': line['timestamp'],
-                    'Transcript': line['transcript'],
-                    'Accurate Words': line['accurate_words'],
-                    'Inaccurate Words': line['inaccurate_words'],
-                    'Accuracy Score': line['accuracy_score'],
-                    'Accuracy Percentage': line['accuracy_percentage']
+                    'Timestamp': timestamp,
+                    'Transcript': transcript,
+                    'Accurate Words': accurate_words,
+                    'Inaccurate Words': len(inaccurate_words),
+                    'Accuracy Score': round(accuracy_score, 2),
+                    'Accuracy Percentage': round(accuracy_percentage, 2)
                 })
 
+            overall_score = (total_accurate / total_words) if total_words else 0
+            overall_percentage = overall_score * 100
             writer.writerow({
                 'Timestamp': 'Overall',
                 'Transcript': '',
-                'Accurate Words': analysis['file_metrics']['total_accurate'],
-                'Inaccurate Words': analysis['file_metrics']['total_inaccurate'],
-                'Accuracy Score': analysis['file_metrics']['overall_score'],
-                'Accuracy Percentage': analysis['file_metrics']['overall_percentage']
+                'Accurate Words': total_accurate,
+                'Inaccurate Words': total_inaccurate,
+                'Accuracy Score': round(overall_score, 2),
+                'Accuracy Percentage': round(overall_percentage, 2)
             })
-        
-        print(f"\033[92mAnalysis saved to {filename}\033[0m")
-    except Exception as e:
-        print(f"\033[91mError saving analysis to file: {e}\033[0m")  
 
-def read_transcript_file(filename):
-    """Read the contents of the Transcript.txt file."""
-    try:
-        with open(filename, 'r') as file:
-            return file.read()
+        print(f"\033[92mAnalysis saved to {csv_filename}\033[0m")
     except Exception as e:
-        print(f"\033[91mError reading the file: {e}\033[0m")
-        return None
+        print(f"\033[91mError writing CSV: {e}\033[0m")
 
 if __name__ == "__main__":
     try:
-        input_text = read_transcript_file("Transcript.txt")
-        
-        if input_text:
-            analysis = analyze_transcripts(input_text)
-            
-            if analysis:
-                print_analysis(analysis)
-                save_analysis_to_csv(analysis)  
-    
+        input_file = "Transcript.txt"
+        output_file = "analysis_results.csv"
+        analyze_transcripts(input_file, output_file)
     except Exception as e:
-        print(f"\033[91mError: {e}\033[0m") 
+        print(f"\033[91mError: {e}\033[0m")
