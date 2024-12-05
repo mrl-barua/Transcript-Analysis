@@ -165,23 +165,23 @@ if __name__ == "__main__":
     try:
         # Example multi-line text input
         input_text = """
-34.9 --> 60.9
-Student: Hi, how are you?
-        
-54.7 --> 55.7
-Tutor: Hello?
-        
-55.7 --> 58.7
-Tutor: I'm great, thank you.
-        
-58.7 --> 61.7
-Tutor: How are you doing?
-        
-60.9 --> 70.9
-Student: Good, thank you.
-        
-61.7 --> 62.7
-Tutor: Awesome.
+        34.9 --> 60.9
+        Student: Hi, how are you?
+                
+        54.7 --> 55.7
+        Tutor: Hello?
+                
+        55.7 --> 58.7
+        Tutor: I'm great, thank you.
+                
+        58.7 --> 61.7
+        Tutor: How are you doing?
+                
+        60.9 --> 70.9
+        Student: Good, thank you.
+                
+        61.7 --> 62.7
+        Tutor: Awesome.
         """
         
         analysis = analyze_transcripts(input_text)
