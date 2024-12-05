@@ -6,7 +6,7 @@ import csv
 spell = SpellChecker()
 
 def process_text(input_text):
-    """Process multi-line input text."""
+    """Process text from a file."""
     text_data = {}
     
     lines = input_text.strip().split("\n")
@@ -150,33 +150,25 @@ def save_analysis_to_csv(analysis, filename="analysis_results.csv"):
     except Exception as e:
         print(f"\033[91mError saving analysis to file: {e}\033[0m")  
 
+def read_transcript_file(filename):
+    """Read the contents of the Transcript.txt file."""
+    try:
+        with open(filename, 'r') as file:
+            return file.read()
+    except Exception as e:
+        print(f"\033[91mError reading the file: {e}\033[0m")
+        return None
+
 if __name__ == "__main__":
     try:
-        input_text = """
-        34.9 --> 60.9
-        Student: Hi, how are you?
-                
-        54.7 --> 55.7
-        Tutor: Hello?
-                
-        55.7 --> 58.7
-        Tutor: I'm great, thank you.
-                
-        58.7 --> 61.7
-        Tutor: How are you doing?
-                
-        60.9 --> 70.9
-        Student: Good, thank you.
-                
-        61.7 --> 62.7
-        Tutor: Awesome.
-        """
+        input_text = read_transcript_file("Transcript.txt")
         
-        analysis = analyze_transcripts(input_text)
-        
-        if analysis:
-            print_analysis(analysis)
-            save_analysis_to_csv(analysis)  
+        if input_text:
+            analysis = analyze_transcripts(input_text)
+            
+            if analysis:
+                print_analysis(analysis)
+                save_analysis_to_csv(analysis)  
     
     except Exception as e:
-        print(f"\033[91mError: {e}\033[0m")  # Red color for errors
+        print(f"\033[91mError: {e}\033[0m") 
