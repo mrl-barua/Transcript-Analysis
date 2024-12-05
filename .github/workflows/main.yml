@@ -16,22 +16,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.x"
-
-      - name: Install Dependencies
+      - name: Install Wine and Dependencies
         run: |
           sudo dpkg --add-architecture i386
           sudo apt update
-          sudo apt install -y wine32
-          python -m pip install --upgrade pip
-          pip install pyinstaller
+          sudo apt install -y wine32-development wine64-development
+          sudo apt install -y xvfb
+
+      - name: Set up Python in Wine
+        run: |
+          wget https://www.python.org/ftp/python/3.9.7/python-3.9.7-amd64.exe
+          wine python-3.9.7-amd64.exe /quiet InstallAllUsers=1 PrependPath=1
+          wine pip install pyinstaller
 
       - name: Build with PyInstaller
         run: |
-          wine pyinstaller --onefile --windowed transcript_analysis.py
+          xvfb-run --auto-servernum --server-args='-screen 0 1024x768x24' wine pyinstaller --onefile --windowed transcript_analysis.py
 
       - name: Get Current Tag and Create New Version
         id: create_tag
