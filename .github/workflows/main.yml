@@ -3,10 +3,10 @@ name: Build PyInstaller Executable
 on:
   push:
     branches:
-      - main # Trigger on push to the main branch
+      - main
   pull_request:
     branches:
-      - main # Trigger on pull requests to the main branch
+      - main
 
 jobs:
   build:
@@ -30,23 +30,28 @@ jobs:
         run: |
           pyinstaller --onefile transcript_analysis.py
 
-          - name: Create Git Tag
-          id: create_tag
-          run: |
-            # Generate the next version tag
-            current_version=$(git describe --tags --abbrev=0 || echo "v0.0.0")
-            major=$(echo $current_version | cut -d. -f1 | tr -d v)
-            minor=$(echo $current_version | cut -d. -f2)
-            patch=$(echo $current_version | cut -d. -f3)
-            new_version="v${major}.$((minor + 1))"
-            echo "New Version: $new_version"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag $new_version
-            git push origin $new_version
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
+      - name: Create New Version Tag
+        id: create_tag
+        run: |
+          # Get the current tag or default to v0.0.0
+          current_version=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          
+          # Extract major, minor, and patch numbers
+          major=$(echo $current_version | cut -d. -f1 | tr -d v)
+          minor=$(echo $current_version | cut -d. -f2)
+          patch=$(echo $current_version | cut -d. -f3)
+
+          # Increment the minor version
+          new_version="v${major}.$((minor + 1))"
+          
+          # Create and push the new tag
+          echo "New Version: $new_version"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $new_version
+          git push origin $new_version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -64,6 +69,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: dist/Transcript-Generator
-          asset_name: Transcript-Generator
+          asset_path: dist/transcript_analysis  
+          asset_name: transcript_analysis
           asset_content_type: application/octet-stream
