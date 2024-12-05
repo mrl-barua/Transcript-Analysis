@@ -30,7 +30,7 @@ jobs:
         run: |
           pyinstaller --onefile transcript_analysis.py
 
-      - name: Create New Version Tag
+      - name: Get Current Tag and Create New Version
         id: create_tag
         run: |
           # Get the current tag or default to v0.0.0
@@ -43,6 +43,12 @@ jobs:
 
           # Increment the minor version
           new_version="v${major}.$((minor + 1))"
+
+          # Check if the tag already exists in the remote repository
+          if git rev-parse "$new_version" >/dev/null 2>&1; then
+            echo "Tag $new_version already exists. Incrementing patch version."
+            new_version="v${major}.${minor}.$((patch + 1))"
+          fi
 
           # Create and push the new tag
           echo "New Version: $new_version"
