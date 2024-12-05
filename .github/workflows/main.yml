@@ -45,14 +45,15 @@ jobs:
           patch=$(echo $current_version | cut -d. -f3)
 
           # Increment the minor version first
-          new_version="v${major}.$((minor + 1))"
+          new_version="v${major}.$((minor + 1)).0"
 
           # Check if the tag already exists in the remote repository
-          if git rev-parse "$new_version" >/dev/null 2>&1; then
+          while git rev-parse "$new_version" >/dev/null 2>&1; do
             # If tag exists, increment the patch version
             echo "Tag $new_version already exists. Incrementing patch version."
-            new_version="v${major}.${minor}.$((patch + 1))"
-          fi
+            patch=$((patch + 1))
+            new_version="v${major}.${minor}.${patch}"
+          done
 
           # Create and push the new tag
           echo "New Version: $new_version"
