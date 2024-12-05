@@ -64,6 +64,8 @@ jobs:
 
           # Output the new version
           echo "new_version=$new_version" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         id: create_release
@@ -85,3 +87,5 @@ jobs:
           asset_path: dist/transcript_analysis
           asset_name: transcript_analysis
           asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
