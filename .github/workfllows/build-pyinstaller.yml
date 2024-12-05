@@ -3,40 +3,35 @@ name: Build PyInstaller Executable
 on:
   push:
     branches:
-      - main # Trigger the workflow on pushes to the main branch
+      - main
   pull_request:
     branches:
-      - main # Trigger the workflow on pull requests to the main branch
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x" # Replace with your Python version
+          python-version: "3.x"
 
-      # Step 3: Install Dependencies
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
 
-      # Step 4: Build Executable
       - name: Build with PyInstaller
         run: |
           pyinstaller --onefile your_script.py
 
-      # Step 5: Upload Executable as Artifact
       - name: Upload Executable
         uses: actions/upload-artifact@v3
         with:
           name: pyinstaller-executable
-          path: dist/your_script # Adjust for the generated executable name
+          path: dist/Transcript-Generator
