@@ -37,33 +37,32 @@ jobs:
           git fetch --tags
 
           # Get the current tag or default to v0.0.0
-          current_version=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          $current_version = $(git describe --tags --abbrev=0 2>$null) 
+          if (-not $current_version) { $current_version = "v0.0.0" }
 
           # Extract major, minor, and patch numbers
-          major=$(echo $current_version | cut -d. -f1 | tr -d v)
-          minor=$(echo $current_version | cut -d. -f2)
-          patch=$(echo $current_version | cut -d. -f3)
+          $major, $minor, $patch = $current_version -replace '^v', '' -split '\.'
 
           # Increment the minor version first
-          new_version="v${major}.$((minor + 1)).0"
+          $new_version = "v$major.$($minor + 1).0"
 
           # Check if the tag already exists in the remote repository
-          while git rev-parse "$new_version" >/dev/null 2>&1; do
+          while (git rev-parse "$new_version" -quiet) {
             # If tag exists, increment the patch version
-            echo "Tag $new_version already exists. Incrementing patch version."
-            patch=$((patch + 1))
-            new_version="v${major}.${minor}.${patch}"
-          done
+            Write-Output "Tag $new_version already exists. Incrementing patch version."
+            $patch = $patch + 1
+            $new_version = "v$major.$minor.$patch"
+          }
 
           # Create and push the new tag
-          echo "New Version: $new_version"
+          Write-Output "New Version: $new_version"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $new_version
           git push origin $new_version
 
           # Output the new version
-          echo "new_version=$new_version" >> $GITHUB_ENV
+          echo "new_version=$new_version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -84,8 +83,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/transcript_analysis
-          asset_name: transcript_analysis
+          asset_path: dist/transcript_analysis.exe
+          asset_name: transcript_analysis.exe
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
