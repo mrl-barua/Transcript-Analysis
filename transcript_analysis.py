@@ -3,32 +3,25 @@ from spellchecker import SpellChecker
 import re
 import csv
 
-# Initialize the spell checker
 spell = SpellChecker()
 
 def process_text(input_text):
     """Process multi-line input text."""
     text_data = {}
     
-    # Split the input into lines and process each one
     lines = input_text.strip().split("\n")
     previous_timestamp = None
     text = ""
     
     for line in lines:
-        # Check for timestamp lines (e.g., 34.9 --> 60.9)
         if '-->' in line:
             if previous_timestamp is not None and text.strip():
-                # Store previous text data
                 text_data[previous_timestamp] = text.strip()
-            # Update the current timestamp and reset text
             previous_timestamp = line.strip()
             text = ""
         else:
-            # Accumulate transcript for each timestamp
             text += " " + line.strip()
     
-    # Add the last accumulated line
     if previous_timestamp is not None and text.strip():
         text_data[previous_timestamp] = text.strip()
     
@@ -39,7 +32,6 @@ def detect_inaccurate_words(transcribed_words):
     inaccurate_words = []
     
     for word in transcribed_words:
-        # Ignore punctuation marks
         word_cleaned = re.sub(r'[^\w\s]', '', word)
         
         if word_cleaned and not spell.correction(word_cleaned) == word_cleaned:
@@ -59,13 +51,11 @@ def analyze_transcripts(input_text):
         
     for timestamp, transcript in text_data.items():
         try:
-            # Split the transcript into words
             transcribed_words = transcript.split()
             
             if not transcribed_words:
                 continue
-            
-            # Detect inaccurate words based on spelling and common patterns
+
             inaccurate_words = detect_inaccurate_words(transcribed_words)
             
             accurate_words = len(transcribed_words) - len(inaccurate_words)
@@ -109,7 +99,7 @@ def analyze_transcripts(input_text):
 def print_analysis(analysis):
     """Print analysis results in a structured format."""
     if 'error' in analysis['file_metrics']:
-        print(f"\033[91mError: {analysis['file_metrics']['error']}\033[0m")  # Red color for errors
+        print(f"\033[91mError: {analysis['file_metrics']['error']}\033[0m") 
         return
     
     print("\n\033[1mAnalysis Summary\033[0m:")
@@ -146,8 +136,7 @@ def save_analysis_to_csv(analysis, filename="analysis_results.csv"):
                     'Accuracy Score': line['accuracy_score'],
                     'Accuracy Percentage': line['accuracy_percentage']
                 })
-            
-            # Write overall metrics to the CSV file as a summary row
+
             writer.writerow({
                 'Timestamp': 'Overall',
                 'Transcript': '',
@@ -157,13 +146,12 @@ def save_analysis_to_csv(analysis, filename="analysis_results.csv"):
                 'Accuracy Percentage': analysis['file_metrics']['overall_percentage']
             })
         
-        print(f"\033[92mAnalysis saved to {filename}\033[0m")  # Green color for success
+        print(f"\033[92mAnalysis saved to {filename}\033[0m")
     except Exception as e:
-        print(f"\033[91mError saving analysis to file: {e}\033[0m")  # Red color for errors
+        print(f"\033[91mError saving analysis to file: {e}\033[0m")  
 
 if __name__ == "__main__":
     try:
-        # Example multi-line text input
         input_text = """
         34.9 --> 60.9
         Student: Hi, how are you?
@@ -188,7 +176,7 @@ if __name__ == "__main__":
         
         if analysis:
             print_analysis(analysis)
-            save_analysis_to_csv(analysis)  # Optionally save the result to a CSV file
+            save_analysis_to_csv(analysis)  
     
     except Exception as e:
         print(f"\033[91mError: {e}\033[0m")  # Red color for errors
