@@ -3,10 +3,10 @@ name: Build PyInstaller Executable
 on:
   push:
     branches:
-      - main
+      - main # Trigger on push to the main branch
   pull_request:
     branches:
-      - main
+      - main # Trigger on pull requests to the main branch
 
 jobs:
   build:
@@ -30,8 +30,37 @@ jobs:
         run: |
           pyinstaller --onefile transcript_analysis.py
 
-      - name: Upload Executable
-        uses: actions/upload-artifact@v3
+      - name: Create Git Tag
+        id: create_tag
+        run: |
+          # Generate the next version tag
+          current_version=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+          major=$(echo $current_version | cut -d. -f1 | tr -d v)
+          minor=$(echo $current_version | cut -d. -f2)
+          patch=$(echo $current_version | cut -d. -f3)
+          new_version="v${major}.$((minor + 1))"
+          echo "New Version: $new_version"
+          git tag $new_version
+          git push origin $new_version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
         with:
-          name: pyinstaller-executable
-          path: dist/Transcript-Generator
+          tag_name: ${{ steps.create_tag.outputs.new_version }}
+          release_name: "Release ${{ steps.create_tag.outputs.new_version }}"
+          body: |
+            Automated release for the new executable build.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Executable to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: dist/Transcript-Generator
+          asset_name: Transcript-Generator
+          asset_content_type: application/octet-stream
