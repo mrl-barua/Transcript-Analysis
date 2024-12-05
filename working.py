@@ -1,6 +1,7 @@
 from collections import Counter
 from spellchecker import SpellChecker
 import re
+import json
 
 # Initialize the spell checker
 spell = SpellChecker()
@@ -55,20 +56,15 @@ def analyze_transcripts(input_text):
     try:
         text_data = process_text(input_text)
     except Exception as e:
-        print(f"Error processing input text: {e}")
-        return {"line_analysis": [], "file_metrics": {"error": str(e)}}
+        return {"line_analysis": [], "file_metrics": {"error": f"Error processing input text: {e}"}}
         
     seen_lines = Counter()
     for timestamp, transcript in text_data.items():
         try:
-            print(f"Processing text: {transcript}")  # Debugging statement
-            
             # Split the transcript into words
             transcribed_words = transcript.split()
-            print(f"Transcribed words: {transcribed_words}")  # Debugging statement
             
             if not transcribed_words:
-                print(f"No transcribed words for text: {transcript}")  # Debugging statement
                 continue
             
             # Detect inaccurate words based on spelling and common patterns
@@ -90,7 +86,6 @@ def analyze_transcripts(input_text):
             })
             
         except Exception as e:
-            print(f"Error processing line: {e}")
             continue
     
     if not total_words:
@@ -109,45 +104,68 @@ def analyze_transcripts(input_text):
         }
     }
 
+def print_analysis(analysis):
+    """Print analysis results in a structured format."""
+    if 'error' in analysis['file_metrics']:
+        print(f"\033[91mError: {analysis['file_metrics']['error']}\033[0m")  # Red color for errors
+        return
+    
+    print("\n\033[1mAnalysis Summary\033[0m:")
+    print(f"Total Words: {analysis['file_metrics']['total_words']}")
+    print(f"Accurate Words: {analysis['file_metrics']['total_accurate']}")
+    print(f"Inaccurate Words: {analysis['file_metrics']['total_inaccurate']}")
+    print(f"Overall Accuracy Score: {analysis['file_metrics']['overall_score']}")
+    
+    print("\n\033[1mDetailed Line Analysis\033[0m:")
+    for line in analysis["line_analysis"]:
+        print(f"\nTimestamp: \033[94m{line['timestamp']}\033[0m")
+        print(f"Transcript: {line['transcript']}")
+        if line['inaccurate_words']:
+            print(f"Inaccurate Words: {line['inaccurate_words_list']}")
+        else:
+            print("Inaccurate Words: None")
+        print(f"Accuracy Score: {line['accuracy_score']}")
+    
+def save_analysis_to_file(analysis, filename="analysis_results.json"):
+    """Save the analysis to a file in JSON format."""
+    try:
+        with open(filename, 'w') as outfile:
+            json.dump(analysis, outfile, indent=4)
+        print(f"\033[92mAnalysis saved to {filename}\033[0m")  # Green color for success
+    except Exception as e:
+        print(f"\033[91mError saving analysis to file: {e}\033[0m")  # Red color for errors
+
 if __name__ == "__main__":
     try:
         # Example multi-line text input
         input_text = """
-        34.9 --> 60.9
-        Student: Hi, how are you?
-        
-        54.7 --> 55.7
-        Tutor: Hello?
-        
-        55.7 --> 58.7
-        Tutor: I'm grate, thank you.
-        
-        58.7 --> 61.7
-        Tutor: How are you doing?
-        
-        60.9 --> 70.9
-        Student: Good, thanx you.
-        
-        61.7 --> 62.7
-        Tutor: Awsome.
-        
-        62.7 --> 63.7
-        Tutor: Amzing.
+34.9 --> 60.9
+Student 1. 1. 1. 1. 1. Hi, how are you?
+
+54.7 --> 55.7
+Tutor: Hello?
+
+55.7 --> 58.7
+Tutor: I'm great, thank you.
+
+58.7 --> 61.7
+Tutor: How are you doing?
+
+60.9 --> 70.9
+Student Good, thank you.
+
+61.7 --> 62.7
+Tutor: Awesome.
+
+
+
         """
 
         analysis = analyze_transcripts(input_text)
         
         if analysis:
-            print("Analysis Results:")
-            if 'error' in analysis['file_metrics']:
-                print(f"Error: {analysis['file_metrics']['error']}")
-            else:
-                print(f"Total Words: {analysis['file_metrics']['total_words']}")
-                print(f"Accurate Words: {analysis['file_metrics']['total_accurate']}")
-                print(f"Inaccurate Words: {analysis['file_metrics']['total_inaccurate']}")
-                print(f"Overall Score: {analysis['file_metrics']['overall_score']}")
-                for line in analysis["line_analysis"]:
-                    print(f"Timestamp: {line['timestamp']}")
-                    print(f"Inaccurate Words: {line['inaccurate_words_list']}")
+            print_analysis(analysis)
+            save_analysis_to_file(analysis)  # Optionally save the result to a file
+    
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"\033[91mError: {e}\033[0m")  # Red color for errors
