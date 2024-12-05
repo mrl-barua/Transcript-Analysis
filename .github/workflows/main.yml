@@ -23,12 +23,15 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
+          sudo apt install -y wine32
           python -m pip install --upgrade pip
           pip install pyinstaller
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile transcript_analysis.py
+          wine pyinstaller --onefile --windowed transcript_analysis.py
 
       - name: Get Current Tag and Create New Version
         id: create_tag
@@ -84,8 +87,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/transcript_analysis
-          asset_name: transcript_analysis
+          asset_path: dist/transcript_analysis.exe
+          asset_name: transcript_analysis.exe
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
